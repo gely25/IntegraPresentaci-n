@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>INTEGRA — Presentación</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg: #081b2e;
+    --bg-2: #0d2740;
+    --panel: #0f2c47;
+    --panel-hover: #133554;
+    --border: #1e3a56;
+    --blue: #2563ff;
+    --blue-soft: #6ea8ff;
+    --turq: #22d3c4;
+    --turq-soft: #7fe9de;
+    --text: #f2f8fb;
+    --muted: #93a5bb;
+    --critico: #22d3c4;
+    --alto: #22d3c4;
+    --medio: #93a5bb;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background: var(--bg); color: var(--text);
+    font-family:'Inter', sans-serif; overflow:hidden; height:100vh;
+  }
+  @media (prefers-reduced-motion: reduce){ *{ animation-duration:.001ms !important; transition-duration:.001ms !important; } }
+  a, button{ font-family:inherit; }
+
+  /* ambient moving background */
+  .orb{ position:fixed; border-radius:50%; filter: blur(80px); opacity:.26; pointer-events:none; z-index:0; }
+  .orb1{ width:520px; height:520px; background: var(--blue); top:-160px; left:-120px; animation: float1 22s ease-in-out infinite; }
+  .orb2{ width:460px; height:460px; background: var(--turq); bottom:-160px; right:-100px; animation: float2 26s ease-in-out infinite; }
+  @keyframes float1{ 0%,100%{ transform:translate(0,0); } 50%{ transform:translate(60px,50px); } }
+  @keyframes float2{ 0%,100%{ transform:translate(0,0); } 50%{ transform:translate(-50px,-40px); } }
+
+  /* TOP ECG MONITOR (COLLAPSIBLE PEEK) */
+  .ecg-header {
+    position: fixed; top: 0; left: 0; width: 100%; z-index: 100;
+    background: rgba(8, 27, 46, 0.94); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 6px 1.5rem 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    display: flex; flex-direction: column; gap: 4px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: 48px; overflow: hidden;
+  }
+  .ecg-header:hover, .ecg-header.expanded {
+    max-height: 96px; padding-bottom: 12px; background: rgba(8, 27, 46, 0.98);
+  }
+  
+  .ecg-top-info {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 11.5px; font-weight: 700; color: var(--muted); letter-spacing: 0.5px;
+  }
+  .ecg-top-info .brand { font-size: 14.5px; font-weight: 800; color: var(--text); }
+  .ecg-top-info .brand span { color: var(--turq); }
+  .ecg-top-info .status-badge {
+    background: rgba(34, 211, 196, 0.12); border: 1px solid rgba(34, 211, 196, 0.3);
+    color: var(--turq); padding: 2px 10px; border-radius: 12px; font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  }
+  .ecg-top-info .status-badge::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--turq);
+    animation: blinkDot 1s infinite alternate;
+  }
+  @keyframes blinkDot { 0% { opacity: 0.3; } 100% { opacity: 1; } }
+
+  .ecg-track-wrapper {
+    position: relative; width: 100%; padding: 2px 0 0;
+  }
+  .ecg-track {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    position: relative; min-width: 780px; width: 100%; padding: 0 10px;
+  }
+  /* Traversed background progress line */
+  .ecg-line-bg {
+    position: absolute; top: 14px; left: 30px; right: 30px; height: 2px;
+    background: var(--border); z-index: 1; pointer-events: none;
+  }
+  .ecg-line-progress {
+    position: absolute; top: 14px; left: 30px; height: 2px;
+    background: linear-gradient(90deg, var(--blue), var(--turq));
+    z-index: 2; pointer-events: none; transition: width 0.35s ease;
+  }
+
+  /* 11 Section Node Items */
+  .ecg-node {
+    position: relative; z-index: 3; display: flex; flex-direction: column; align-items: center;
+    cursor: pointer; flex: 1; text-align: center; background: none; border: none; padding: 0; outline: none;
+  }
+  .ecg-node-svg {
+    width: 44px; height: 22px; overflow: visible; margin-bottom: 0px;
+    transition: transform 0.25s ease;
+  }
+  .ecg-node-svg path {
+    stroke: var(--muted); stroke-width: 1.5; fill: none; transition: stroke 0.3s ease;
+  }
+  .ecg-node.visited .ecg-node-svg path { stroke: var(--turq); }
+  .ecg-node.active .ecg-node-svg path { stroke: var(--turq); stroke-width: 2.2; }
+
+  /* Beating red dot and glowing halo on active node */
+  .ecg-dot-wrapper {
+    position: relative; width: 12px; height: 12px; margin-top: -13px; margin-bottom: 4px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ecg-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--muted);
+    transition: background 0.3s ease, transform 0.3s ease;
+  }
+  .ecg-node.visited .ecg-dot { background: var(--turq); }
+  .ecg-node.active .ecg-dot {
+    background: var(--turq);
+    animation: ecgPulse 1.2s ease-in-out infinite;
+    z-index: 2;
+  }
+  .ecg-halo {
+    position: absolute; width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(34, 211, 196, 0.4); opacity: 0; pointer-events: none;
+  }
+  .ecg-node.active .ecg-halo {
+    opacity: 1; animation: ecgGlow 1.2s ease-in-out infinite;
+  }
+
+  @keyframes ecgPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.4); }
+    100% { transform: scale(1); }
+  }
+  @keyframes ecgGlow {
+    0% { transform: scale(0.8); opacity: 0.8; }
+    50% { transform: scale(1.6); opacity: 0.15; }
+    100% { transform: scale(0.8); opacity: 0.8; }
+  }
+
+  /* Section Title Label (Collapsible Peek) */
+  .ecg-label {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600;
+    color: var(--muted); white-space: nowrap; transition: all 0.3s ease;
+    user-select: none; opacity: 0; transform: translateY(-4px); pointer-events: none;
+  }
+  .ecg-header:hover .ecg-label, .ecg-header.expanded .ecg-label {
+    opacity: 1; transform: translateY(0); pointer-events: auto;
+  }
+  .ecg-node:hover .ecg-label { color: var(--text); }
+  .ecg-node.visited .ecg-label { color: var(--turq-soft); }
+  .ecg-node.active .ecg-label {
+    color: var(--turq); font-weight: 700;
+    text-shadow: 0 0 10px rgba(34, 211, 196, 0.4);
+  }
+
+  /* ===== SHARED-AXIS HORIZONTAL TRANSITIONS (Material Design inspired) ===== */
+  /* The deck is a spatial container: slides live "side by side" on a horizontal axis.
+     Going forward = current exits left, new enters from right.
+     Going backward = current exits right, new enters from left.
+     The ECG monitor bar is the persistent shared element that anchors spatial memory. */
+  .deck{ position:relative; height:100vh; width:100vw; z-index:1; overflow:hidden; }
+  .slide{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column; justify-content:center;
+    padding: 5.8rem 7vw 5.8rem;
+    opacity: 0; pointer-events: none;
+    overflow-y: auto;
+    /* Default: parked to the right (unseen future slide) */
+    transform: translateX(60px) scale(0.97);
+    transition: opacity 340ms cubic-bezier(0.4, 0, 0.2, 1),
+                transform 340ms cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform, opacity;
+  }
+  /* ACTIVE: centered, fully visible */
+  .slide.active{
+    opacity: 1; transform: translateX(0) scale(1); pointer-events: auto;
+  }
+  /* EXITED LEFT: already passed (user went forward) */
+  .slide.exit-left{
+    opacity: 0; transform: translateX(-60px) scale(0.97); pointer-events: none;
+  }
+  /* EXITED RIGHT: went back past this slide (user went backward) */
+  .slide.exit-right{
+    opacity: 0; transform: translateX(60px) scale(0.97); pointer-events: none;
+  }
+
+  /* Layered Stagger Animations inside Slides — elements enter in choreographed sequence */
+  .slide.active .stagger-1 { animation: layerSlideIn 0.45s 0.06s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .slide.active .stagger-2 { animation: layerSlideIn 0.45s 0.16s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .slide.active .stagger-3 { animation: layerSlideIn 0.45s 0.28s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .slide.active .stagger-4 { animation: layerSlideIn 0.45s 0.40s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+  @keyframes layerSlideIn {
+    from { opacity: 0; transform: translateY(18px) scale(0.98); filter: blur(2px); }
+    to   { opacity: 1; transform: translateY(0)   scale(1);    filter: blur(0);   }
+  }
+
+  /* ===== SCRIM + FOCAL ZOOM (Attention Isolation) ===== */
+  /* On dense slides, hovering a card/row dims its siblings via a CSS scrim.
+     The focused element scales up subtly and gains a glow border — directing
+     the viewer's eye to the exact data point being defended. */
+  .focus-group {
+    position: relative;
+  }
+  .focus-group > * {
+    transition: opacity 0.35s ease, transform 0.35s ease, filter 0.35s ease;
+  }
+  /* When ANY child inside a focus-group is hovered, ALL children dim... */
+  .focus-group:hover > * {
+    opacity: 0.35; filter: blur(1.5px); transform: scale(0.98);
+  }
+  /* ...except the one being hovered, which spotlights */
+  .focus-group:hover > *:hover {
+    opacity: 1; filter: blur(0); transform: scale(1.02) translateY(-3px);
+    box-shadow: 0 8px 28px rgba(34, 211, 196, 0.18);
+    border-color: var(--turq) !important;
+    z-index: 5; position: relative;
+  }
+  /* Hero value spotlight — key numbers that deserve a moment */
+  .hero-value {
+    display: inline-block;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .slide.active .hero-value {
+    animation: heroZoom 0.6s 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @keyframes heroZoom {
+    0%   { transform: scale(0.85); opacity: 0; filter: blur(4px); }
+    60%  { transform: scale(1.08); opacity: 1; filter: blur(0);   }
+    100% { transform: scale(1);    opacity: 1; filter: blur(0);   }
+  }
+
+  .kicker{ font-size:12.5px; font-weight:600; color: var(--turq); letter-spacing:.5px; margin-bottom:.6rem; }
+  h1{ font-size: clamp(32px,4vw,50px); font-weight:800; line-height:1.1; margin:0 0 .8rem; max-width: 18ch; }
+  h2{ font-size: clamp(24px,3vw,34px); font-weight:800; line-height:1.15; margin:0 0 .8rem; max-width:22ch; }
+  p.lead{ color: var(--muted); font-size:16px; line-height:1.65; max-width:60ch; margin:0 0 1.6rem; }
+  .content{ max-width: 1040px; margin: 0 auto; width: 100%; }
+
+  /* HERO GRID WITH LARGE BEATING HEART */
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    align-items: center;
+    gap: 3rem;
+    height: 100%;
+    min-height: 60vh;
+    position: relative;
+    z-index: 2;
+  }
+  .hero-left {
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  
+  .hero-title {
+    font-size: clamp(55px, 7.5vw, 100px);
+    font-weight: 900;
+    line-height: 1.05;
+    margin: 0.5rem 0 1.2rem;
+    background: linear-gradient(135deg, #ffffff 0%, var(--turq) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 4px 12px rgba(34, 211, 196, 0.2));
+    letter-spacing: -1px;
+  }
+  
+  .hero-subtitle {
+    font-size: clamp(16px, 1.8vw, 20px);
+    line-height: 1.5;
+    color: var(--muted);
+    margin-bottom: 2rem;
+    max-width: 95%;
+  }
+  .hero-subtitle i {
+    color: var(--turq);
+    font-style: normal;
+    display: block;
+    margin-top: 1rem;
+    padding-left: 1.2rem;
+    border-left: 3px solid var(--turq);
+    background: linear-gradient(90deg, rgba(34, 211, 196, 0.05), transparent);
+    padding-top: 0.5rem; padding-bottom: 0.5rem;
+  }
+
+  .hero-cases {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+  }
+  .hero-cases .case-chip {
+    background: rgba(13, 39, 64, 0.6);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(34, 211, 196, 0.25);
+    border-radius: 30px;
+    padding: 8px 18px;
+    font-size: 13.5px;
+    color: var(--text);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: default;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  .hero-cases .case-chip:hover {
+    transform: translateY(-5px) scale(1.05);
+    background: rgba(34, 211, 196, 0.15);
+    border-color: var(--turq);
+    box-shadow: 0 10px 20px rgba(34, 211, 196, 0.25);
+  }
+  .hero-cases .case-chip b { color: var(--turq); }
+
+  .hero-heart-wrapper {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    perspective: 1000px;
+  }
+
+  .heart-glow {
+    position: absolute;
+    width: 380px;
+    height: 380px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(34, 211, 196, 0.35) 0%, rgba(37, 99, 255, 0.12) 50%, transparent 70%);
+    animation: pulseRing 1.35s ease-in-out infinite;
+    z-index: 1;
+    pointer-events: none;
+    transition: all 0.5s ease;
+  }
+
+  .beating-heart-large {
+    width: clamp(280px, 30vw, 440px);
+    height: auto;
+    max-height: 50vh;
+    object-fit: contain;
+    filter: drop-shadow(0 15px 35px rgba(34, 211, 196, 0.4));
+    animation: heartbeat 1.35s ease-in-out infinite;
+    position: relative;
+    z-index: 2;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.4s ease;
+  }
+  
+  /* Interactive heart speeds up on hover */
+  .hero-heart-wrapper:hover .beating-heart-large {
+    animation-duration: 0.65s;
+    filter: drop-shadow(0 25px 45px rgba(34, 211, 196, 0.7));
+  }
+  .hero-heart-wrapper:hover .heart-glow {
+    animation-duration: 0.65s;
+    background: radial-gradient(circle, rgba(34, 211, 196, 0.5) 0%, rgba(37, 99, 255, 0.2) 50%, transparent 70%);
+    transform: scale(1.15);
+  }
+
+  /* Moving background particles for hero */
+  .hero-bg-particles {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    overflow: hidden;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .particle {
+    position: absolute;
+    background: var(--turq);
+    border-radius: 50%;
+    opacity: 0.2;
+    animation: floatParticle linear infinite;
+  }
+  @keyframes floatParticle {
+    0% { transform: translateY(110vh) scale(0); opacity: 0; }
+    20% { opacity: 0.4; }
+    80% { opacity: 0.4; }
+    100% { transform: translateY(-10vh) scale(1.5); opacity: 0; }
+  }
+
+  @keyframes heartbeat {
+    0% { transform: rotate(15deg) scale(1); }
+    14% { transform: rotate(15deg) scale(1.08); }
+    28% { transform: rotate(15deg) scale(1); }
+    42% { transform: rotate(15deg) scale(1.05); }
+    70% { transform: rotate(15deg) scale(1); }
+    100% { transform: rotate(15deg) scale(1); }
+  }
+
+  @keyframes pulseRing {
+    0% { transform: scale(0.92); opacity: 0.9; }
+    50% { transform: scale(1.25); opacity: 0.25; }
+    100% { transform: scale(0.92); opacity: 0.9; }
+  }
+
+  /* STAT GRID & CARDS */
+  .stat-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-bottom:1.6rem; }
+  .stat{ 
+    background: var(--panel); border:1px solid var(--border); border-radius:12px; padding:1.2rem 1.1rem;
+    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  .stat:hover { transform: translateY(-4px); border-color: var(--turq); box-shadow: 0 10px 25px rgba(34, 211, 196, 0.15); }
+  .stat .num{ font-size:32px; font-weight:800; background:linear-gradient(90deg,var(--blue-soft),var(--turq)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .stat .desc{ font-size:12.5px; color:var(--muted); margin-top:.4rem; line-height:1.5; }
+
+  .cases{ display:flex; gap:1rem; flex-wrap:wrap; }
+  .case-chip{ 
+    background: var(--panel); border:1px solid var(--border); border-radius:10px; padding:.7rem 1rem; font-size:13px; color:var(--muted);
+    transition: transform 0.25s ease, border-color 0.25s ease; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .case-chip:hover { transform: translateY(-2px); border-color: var(--blue-soft); }
+  .case-chip b{ color: var(--text); }
+  .case-chip.alert-flash b { color: var(--text); font-weight: 800; }
+  .case-chip .alert-icon { color: var(--turq); font-size: 14px; animation: flashIcon 1.5s infinite alternate; }
+  @keyframes flashIcon { 0% { opacity: 0.4; } 100% { opacity: 1; } }
+
+  /* SECTION 3: 3 PROBLEMS CONNECTING ROWS */
+  .prob-rows { display: flex; flex-direction: column; gap: 1.2rem; }
+  .prob-row {
+    display: grid; grid-template-columns: 1fr 40px 1fr; align-items: center;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 1.2rem 1.4rem;
+    transition: transform 0.25s ease, border-color 0.25s ease;
+  }
+  .prob-row:hover { transform: translateX(4px); border-color: var(--turq); }
+  .prob-box { font-size: 14px; line-height: 1.5; }
+  .prob-box.prob { color: var(--text); font-weight: 700; }
+  .prob-box.sol { color: var(--turq); font-weight: 600; }
+  .prob-connector {
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+  .prob-arrow-svg { width: 30px; height: 20px; }
+  .prob-arrow-svg path {
+    stroke: var(--turq); stroke-width: 2.5; fill: none; stroke-dasharray: 40; stroke-dashoffset: 40;
+    transition: stroke-dashoffset 0.8s ease;
+  }
+  .slide.active .prob-arrow-svg path { stroke-dashoffset: 0; }
+
+  /* THREE PILLARS (SECTION 4) */
+  .pillars{ display:flex; gap:1.2rem; margin-bottom:1rem; }
+  .pillar{
+    flex:1; background:var(--panel); border:1px solid var(--border); border-radius:14px;
+    padding:1.6rem 1.2rem; text-align:center; cursor:pointer; position:relative; overflow:hidden;
+    transition: border-color .3s, transform .2s, box-shadow .3s;
+    animation: pillarBreathe 3s ease-in-out infinite;
+  }
+  @keyframes pillarBreathe {
+    0%, 100% { transform: scale(1); border-color: var(--border); }
+    50% { transform: scale(1.015); border-color: rgba(34,211,196,0.4); }
+  }
+  .pillar:hover{ transform: translateY(-4px) !important; border-color: var(--turq-soft); box-shadow: 0 8px 20px rgba(34,211,196,0.15); }
+  .pillar .icon{ width:44px; height:44px; border-radius:50%; margin:0 auto .8rem; background:var(--bg-2); border:1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .pillar .t{ font-weight:700; font-size:16px; }
+  .pillar .h{ font-size:12px; color:var(--muted); margin-top:.3rem; font-family:'IBM Plex Mono',monospace; }
+  .pillar.lit{ border-color: var(--turq) !important; box-shadow: 0 0 24px rgba(34,211,196,.25); animation: none; }
+  .pillar.lit .icon{ background: linear-gradient(135deg,var(--blue),var(--turq)); color: #fff; }
+  .link-out{ height:3px; background:var(--border); border-radius:2px; margin: 0 0 1.2rem; position:relative; overflow:hidden; }
+  .link-out .fill{ position:absolute; inset:0; width:0%; background:linear-gradient(90deg,var(--blue),var(--turq)); transition:width .8s ease; }
+  .seal{ text-align:center; font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--turq); min-height:22px; font-weight: 600; }
+
+  /* SECTION 6: COMPARATIVE TABLE WITH HIGHLIGHT */
+  .compare {
+    display: grid; grid-template-columns: 1.3fr repeat(3, 1fr);
+    background: transparent; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px;
+    overflow: hidden; font-size: 13.5px;
+  }
+  .compare > div {
+    background: rgba(13, 39, 64, 0.4); padding: 1.1rem 1.2rem;
+    display: flex; align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .compare > div:nth-last-child(-n+4) { border-bottom: none; }
+  .compare .h { font-weight: 800; color: #fff; background: rgba(13, 39, 64, 0.8); font-size: 14px; }
+  
+  .compare .col-fabric { background: rgba(34, 211, 196, 0.12) !important; transition: background 0.5s ease; }
+  .slide.active .compare .col-fabric { background: rgba(34, 211, 196, 0.2) !important; }
+  
+  .compare .good { color: var(--turq); font-weight: 700; }
+  .compare .bad { color: var(--muted); font-style: italic; }
+  .compare .lbl { color: var(--text); font-weight: 600; }
+
+  /* SECTION 7: ROADMAP WITH DYNAMIC PROGRESS LINE */
+  .roadmap { display: flex; gap: 0; margin-top: 2rem; position: relative; }
+  .roadmap-line-bg { position: absolute; top: 12px; left: 0; width: 100%; height: 1px; background: #3a4658; z-index: 1; }
+  .roadmap-line-fill { position: absolute; top: 12px; left: 0; width: 0%; height: 1px; background: var(--turq); z-index: 2; transition: width 1.2s ease; }
+  .slide.active .roadmap-line-fill { width: 38%; } /* Fills up to the "En curso" node */
+  
+  .rstep { flex: 1; padding-top: 2.4rem; padding-right: 1.5rem; position: relative; z-index: 3; }
+  
+  /* The 13px Circle */
+  .rstep::before {
+    content: ''; position: absolute; top: 6px; left: 0; width: 13px; height: 13px;
+    border-radius: 50%; box-sizing: border-box; transition: all 0.4s ease; transform: translateY(-50%);
+  }
+  
+  /* Status styles */
+  .rstep.completed::before { background: var(--turq); border: none; box-shadow: 0 0 10px rgba(34,211,196,0.3); }
+  .rstep.in-progress::before { background: var(--bg); border: 2px solid var(--turq); box-shadow: 0 0 12px rgba(34,211,196,0.4); }
+  .rstep.future::before { background: var(--bg); border: 2px solid #3a4658; }
+  .rstep.future { opacity: 0.55; }
+  
+  /* Text styling */
+  .rstep .f { font-family: 'IBM Plex Mono', monospace; font-size: 11px; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+  .rstep.completed .f { color: var(--muted); }
+  .rstep.in-progress .f { color: var(--turq); font-weight: 700; }
+  .rstep.future .f { color: #5a6678; }
+  
+  .rstep h3 { font-size: 15px; font-weight: 500; color: #fff; margin: 0 0 0.4rem; }
+  .rstep p { font-size: 13px; line-height: 1.6; color: var(--muted); margin: 0; }
+
+  /* SECTION 8: FRAMEWORK SUB-TABS */
+  .framework-nav {
+    display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.2rem;
+    border-bottom: 1px solid var(--border); padding-bottom: 0.6rem;
+  }
+  .fw-tab {
+    background: var(--panel); border: 1px solid var(--border); color: var(--muted);
+    padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.25s ease; font-family: 'IBM Plex Mono', monospace;
+  }
+  .fw-tab:hover { color: var(--text); border-color: var(--turq); }
+  .fw-tab.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .fw-content { display: none; }
+  .fw-content.active { display: block; animation: layerFadeUp 0.35s ease-out; }
+
+  /* HEATMAP 4x4 FOR SECTION 8c */
+  .heatmap-grid {
+    display: grid; grid-template-columns: 80px repeat(4, 1fr); gap: 6px; font-size: 12px;
+  }
+  .hm-cell {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 8px; text-align: center; transition: all 0.3s ease;
+  }
+  .hm-cell.header { background: var(--bg-2); font-weight: 700; color: var(--text); }
+  .hm-cell.high { background: rgba(34, 211, 196, 0.3); color: var(--turq); border-color: rgba(34,211,196,0.5); font-weight: 800; }
+  .hm-cell.med { background: rgba(34, 211, 196, 0.15); color: var(--turq-soft); font-weight: 600; }
+  .hm-cell.low { background: rgba(34, 211, 196, 0.07); color: var(--muted); }
+
+  /* RISK BADGES & TABLES */
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px;
+    font-weight: 800; padding: 4px 12px; border-radius: 24px; letter-spacing: 0.5px;
+    background: transparent; color: #fff; border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+  .badge svg { width: 14px; height: 14px; }
+  .badge.critico { font-weight: 800; }
+  .badge.alto { font-weight: 700; color: rgba(255, 255, 255, 0.9); border-color: rgba(255, 255, 255, 0.12); }
+  .badge.medio { font-weight: 600; color: rgba(255, 255, 255, 0.7); border-color: rgba(255, 255, 255, 0.08); }
+
+  table.data { width: 100%; border-collapse: separate; border-spacing: 0 6px; font-size: 14px; margin-top: 0.5rem; }
+  table.data th { 
+    text-align: left; font-size: 12px; color: #fff; font-weight: 800; 
+    text-transform: uppercase; letter-spacing: 1px; padding: 0.2rem 1.4rem 0.8rem; border-bottom: none; 
+  }
+  table.data tr { transition: transform 0.2s ease; }
+  table.data tr:not(:first-child):hover { transform: translateX(4px); }
+  table.data td {
+    padding: 1.1rem 1.4rem; background: rgba(13, 39, 64, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.03); border-right: none; border-left: none;
+    vertical-align: middle; color: var(--text);
+  }
+  table.data td:first-child {
+    border-left: 1px solid rgba(255, 255, 255, 0.03);
+    border-top-left-radius: 10px; border-bottom-left-radius: 10px; font-weight: 700;
+  }
+  table.data td:last-child {
+    border-right: 1px solid rgba(255, 255, 255, 0.03);
+    border-top-right-radius: 10px; border-bottom-right-radius: 10px;
+  }
+  table.data td.muted { color: var(--muted); font-weight: 400; }
+
+  /* CARDS & SPLIT */
+  .cards{ display:grid; grid-template-columns:repeat(2,1fr); gap:1rem; }
+  .card{ 
+    background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:1.1rem 1.2rem;
+    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  .card:hover { transform: translateY(-4px); border-color: var(--turq); box-shadow: 0 10px 25px rgba(34, 211, 196, 0.15); }
+  .card .t{ font-weight:700; font-size:15px; margin-bottom:.3rem; }
+  .card .m{ font-size:12.5px; color:var(--turq); margin-bottom:.5rem; font-weight: 600; }
+  .card .d{ font-size:13px; color:var(--muted); line-height:1.5; }
+
+  .split{ display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; }
+  .split-card{ border-radius:14px; padding:1.4rem; border:1px solid var(--border); transition: transform 0.4s ease; }
+  .slide.active .split-card.a { animation: slideFromLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+  .slide.active .split-card.b { animation: slideFromRight 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+  @keyframes slideFromLeft { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes slideFromRight { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+
+  .split-card.a{ background: linear-gradient(180deg, rgba(37,99,255,.08), var(--panel)); }
+  .split-card.b{ background: linear-gradient(180deg, rgba(34,211,196,.08), var(--panel)); }
+  .split-card .k{ font-size:13px; font-weight:700; margin-bottom:.6rem; }
+  .split-card.a .k{ color: var(--blue-soft); }
+  .split-card.b .k{ color: var(--turq); }
+  .split-card ul{ margin:0; padding-left:1.1rem; font-size:13.5px; color:var(--muted); line-height:1.85; }
+
+  /* TEAM ROSTER (SECTION 11) — Premium closing layout */
+  .closing-layout {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; min-height: 70vh; gap: 2.4rem;
+  }
+  .closing-quote {
+    font-size: clamp(24px, 3.2vw, 40px); font-weight: 800; line-height: 1.22;
+    max-width: 20ch; color: var(--text); position: relative;
+    padding: 0 1rem;
+  }
+  .closing-quote::before {
+    content: '\201C'; position: absolute; top: -0.5em; left: -0.3em;
+    font-size: 4em; color: var(--turq); opacity: 0.15; font-family: Georgia, serif;
+    line-height: 1; pointer-events: none;
+  }
+  .closing-tagline {
+    font-size: 15px; font-weight: 600; color: var(--turq); letter-spacing: 0.5px;
+    display: flex; align-items: center; gap: 0.8rem;
+  }
+  .closing-tagline::before, .closing-tagline::after {
+    content: ''; width: 40px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--turq), transparent);
+  }
+  .closing-divider {
+    width: 60px; height: 2px; border-radius: 2px;
+    background: linear-gradient(90deg, var(--blue), var(--turq));
+  }
+  .roster-row {
+    display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; width: 100%; max-width: 900px;
+  }
+  .rcard {
+    flex: 1 1 240px;
+    background: linear-gradient(180deg, rgba(34, 211, 196, 0.04), rgba(13, 39, 64, 0.7));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 3px solid var(--turq);
+    border-radius: 16px;
+    padding: 1.8rem 1.4rem;
+    text-align: center;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+  }
+  .rcard::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 100%;
+    background: radial-gradient(circle at top, rgba(34, 211, 196, 0.15) 0%, transparent 70%);
+    opacity: 0; transition: opacity 0.4s ease; pointer-events: none;
+  }
+  .rcard:hover::before { opacity: 1; }
+  .rcard:hover {
+    transform: translateY(-8px) scale(1.02);
+    border-color: rgba(34, 211, 196, 0.4);
+    box-shadow: 0 22px 45px rgba(34, 211, 196, 0.18);
+  }
+  .rcard .flag {
+    font-size: 12px; font-weight: 800; color: var(--turq);
+    background: rgba(13, 39, 64, 0.8); border: 1px solid rgba(34,211,196,0.4);
+    border-radius: 20px; padding: 5px 14px; margin-bottom: 1.2rem;
+    display: inline-block; transition: all 0.3s ease; letter-spacing: 1.5px;
+  }
+  .rcard:hover .flag {
+    background: var(--turq); color: #0d2740;
+    box-shadow: 0 0 15px rgba(34, 211, 196, 0.5);
+    transform: scale(1.05);
+  }
+  .rcard .n { font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 0.6rem; letter-spacing: -0.3px; }
+  .rcard .r { font-size: 12px; color: var(--muted); line-height: 1.5; font-weight: 500; }
+  .closing-kicker {
+    font-size: 11.5px; font-weight: 700; color: var(--turq); letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  /* BOTTOM NAVIGATION BAR */
+  .bottom-nav-bar {
+    position: fixed; bottom: 1.2rem; left: 50%; transform: translateX(-50%); z-index: 90;
+    display: flex; align-items: center; gap: 1.5rem;
+    background: rgba(13, 39, 64, 0.94); border: 1px solid var(--border); border-radius: 40px;
+    padding: 0.6rem 1.6rem; backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  }
+  .bottom-nav-btn {
+    min-width: 140px; padding: 10px 22px; font-size: 14.5px; font-weight: 700;
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    border-radius: 30px; cursor: pointer; transition: all 0.25s ease;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+  .bottom-nav-btn:hover {
+    background: var(--blue); border-color: var(--turq); color: #ffffff;
+    transform: translateY(-2px); box-shadow: 0 6px 18px rgba(37, 99, 255, 0.35);
+  }
+  .bottom-nav-btn:disabled {
+    opacity: 0.35; cursor: not-allowed; transform: none !important;
+    background: var(--panel) !important; color: var(--muted) !important;
+    border-color: var(--border) !important; box-shadow: none !important;
+  }
+  .slide-count-badge {
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600;
+    color: var(--muted); min-width: 70px; text-align: center;
+  }
+
+  @media (max-width: 860px){
+    .hero-grid { grid-template-columns: 1fr; gap: 2rem; }
+    .hero-heart-wrapper { margin-top: 1.5rem; }
+    .slide{ padding: 7.5rem 5vw 7.5rem; }
+    .stat-grid, .cards, .split, .compare, .roster, .prob-row{ grid-template-columns: 1fr; }
+    .compare{ grid-template-columns:1fr; }
+    .pillars{ flex-direction:column; }
+    .roadmap{ flex-direction:column; }
+    .rstep{ padding-right:0; padding-left:1rem; border-top:none; border-left:2px solid var(--border); }
+    .rstep::before{ left:-6px; top:0; }
+    .bottom-nav-btn { min-width: 110px; padding: 8px 16px; font-size: 13.5px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<!-- HEADER NAVEGACIÓN: MONITOR CARDÍACO DE PROGRESO (11 SECCIONES COLLAPSIBLE PEEK) -->
+<header class="ecg-header" id="ecgHeader">
+  <div class="ecg-top-info">
+    <div class="brand">INTEGRA<span>.</span></div>
+    <div class="status-badge" id="statusBadge">MONITOR DE PROGRESO (11 SECCIONES)</div>
+  </div>
+
+  <div class="ecg-track-wrapper">
+    <div class="ecg-track" id="ecgTrack">
+      <div class="ecg-line-bg"></div>
+      <div class="ecg-line-progress" id="ecgProgress"></div>
+      <!-- 11 ECG Nodes generated dynamically by JS -->
+    </div>
+  </div>
+</header>
+
+<div class="deck" id="deck">
+
+  <!-- SECCIÓN 1 — PORTADA -->
+  <section class="slide">
+    <!-- Ambient Particles -->
+    <div class="hero-bg-particles">
+      <div class="particle" style="width: 8px; height: 8px; left: 10%; animation-duration: 15s; animation-delay: 0s;"></div>
+      <div class="particle" style="width: 14px; height: 14px; left: 25%; animation-duration: 12s; animation-delay: -5s;"></div>
+      <div class="particle" style="width: 6px; height: 6px; left: 45%; animation-duration: 18s; animation-delay: -2s;"></div>
+      <div class="particle" style="width: 20px; height: 20px; left: 65%; animation-duration: 14s; animation-delay: -8s; filter: blur(2px);"></div>
+      <div class="particle" style="width: 10px; height: 10px; left: 85%; animation-duration: 16s; animation-delay: -1s;"></div>
+      <div class="particle" style="width: 16px; height: 16px; left: 55%; animation-duration: 20s; animation-delay: -10s; filter: blur(1px);"></div>
+    </div>
+
+    <div class="content" style="height: 100%; display: flex; align-items: center;">
+      <div class="hero-grid">
+        <div class="hero-left">
+          <div class="kicker stagger-1">Propuesta para Argentina · Modelo replicable para América Latina</div>
+          <h1 class="hero-title stagger-2">INTEGRA</h1>
+          <p class="hero-subtitle stagger-3">Infraestructura de trazabilidad e identidad para la gestión de recursos de asignación.<br><i>"Cuando una lista de espera se puede manipular sin dejar rastro, el problema no es solo técnico."</i></p>
+          <div class="hero-cases stagger-4">
+            <div class="case-chip"><b>Piloto</b> · Argentina, INCUCAI</div>
+            <div class="case-chip"><b>Plataforma</b> · Hyperledger Fabric</div>
+            <div class="case-chip"><b>Identidad</b> · PKI X.509</div>
+            <div class="case-chip"><b>Metodología</b> · STRIDE + MITRE ATT&CK v14</div>
+          </div>
+        </div>
+
+        <div class="hero-right stagger-2">
+          <div class="hero-heart-wrapper">
+            <div class="heart-glow"></div>
+            <!-- Large Beating Heart directly from cora.png -->
+            <img src="cora.png" class="beating-heart-large" alt="Corazón INTEGRA" title="Corazón INTEGRA" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECCIÓN 2 — EL PROBLEMA -->
+  <section class="slide">
+    <div class="content">
+      <div class="kicker stagger-1">Diagnóstico regional</div>
+      <h2 class="stagger-1">La lista de espera se puede alterar sin dejar huella</h2>
+      <p class="lead stagger-2">La donación de órganos moviliza identidades, datos clínicos y autorizaciones entre instituciones que operan sin trazabilidad inmutable. Cada nodo es un vector de ataque. Argentina fue elegida como piloto por contar con el registro de trasplantes más estructurado (INCUCAI) y un marco legal aplicable (Ley 25.326).</p>
+      
+      <div class="stat-grid focus-group stagger-3">
+        <div class="stat"><div class="num hero-value" data-count="67" data-suffix="%">0</div><div class="desc">de organizaciones de salud reportó ransomware en 2024</div></div>
+        <div class="stat"><div class="num hero-value" data-count="10" data-prefix="5–" data-suffix="%">0</div><div class="desc">de los trasplantes mundiales ocurre fuera de registro formal (OMS)</div></div>
+        <div class="stat"><div class="num hero-value" data-count="0">0</div><div class="desc">sistemas nacionales de la región con blockchain en producción</div></div>
+      </div>
+      
+      <div class="cases stagger-4">
+        <div class="case-chip alert-flash"><span class="alert-icon">⚠</span> <b>Conti → Costa Rica, 2022</b> — sistema de salud nacional paralizado</div>
+        <div class="case-chip alert-flash"><span class="alert-icon">⚠</span> <b>Rhysida → PAMI Argentina, 2023</b> — caso de referencia directa</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECCIÓN 3 — LOS 3 PROBLEMAS CONCRETOS -->
+  <section class="slide">
+    <div class="content">
+      <div class="kicker stagger-1">Desafíos clave vs Solución de arquitectura</div>
+      <h2 class="stagger-1">Tres vulnerabilidades estructurales en la cadena médica</h2>
+      <p class="lead stagger-2">Frenamos la manipulación interna, el ransomware paralizante y la desconexión física del traslado.</p>
+      
+      <div class="prob-rows focus-group stagger-3">
+        <div class="prob-row">
+          <div class="prob-box prob">1. Lista de espera mutable<br><span style="font-size:12.5px; font-weight:400; color:var(--muted);">Un administrador puede reordenar pacientes sin dejar rastro.</span></div>
+          <div class="prob-connector">
+            <svg class="prob-arrow-svg" viewBox="0 0 30 20"><path d="M 0,10 L 22,10 M 16,4 L 24,10 L 16,16" /></svg>
+          </div>
+          <div class="prob-box sol">Registro inmutable<br><span style="font-size:12.5px; font-weight:400; color:var(--muted);">Firma digital multisectorial que bloquea alteraciones arbitrarias.</span></div>
+        </div>
+
+        <div class="prob-row">
+          <div class="prob-box prob">2. Ransomware paralizante<br><span style="font-size:12.5px; font-weight:400; color:var(--muted);">Un ciberataque detiene la coordinación en la ventana de isquemia.</span></div>
+          <div class="prob-connector">
+            <svg class="prob-arrow-svg" viewBox="0 0 30 20"><path d="M 0,10 L 22,10 M 16,4 L 24,10 L 16,16" /></svg>
+          </div>
+          <div class="prob-box sol">Red distribuida resiliente<br><span style="font-size:12.5px; font-weight:400; color:var(--muted);">Sin punto único de fallo: la operación continúa ante caída de nodos.</span></div>
+        </div>
+
+        <div class="prob-row">
+          <div class="prob-box prob">3. Cadena de custodia en papel<br><span style="font-size:12.5px; font-weight:400; color:var(--muted);">El traslado físico no tiene conexión directa con el expediente digital.</span></div>
+          <div class="prob-connector">
+            <svg class="prob-arrow-svg" viewBox="0 0 30 20"><path d="M 0,10 L 22,10 M 16,4 L 24,10 L 16,16" /></svg>
+          </div>
+          <div class="prob-box sol">Telemetría IoT autenticada<br><span style="font-size:12.5px; font-weight:400; color:var(--muted);">Sensores firmados en el edge transmiten temperatura y ubicación a blockchain.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECCIÓN 4 — LA PROPUESTA / SOLUCIÓN -->
+  <section class="slide">
+    <div class="content">
+      <div class="kicker stagger-1">Arquitectura integral</div>
+      <h2 class="stagger-1">INTEGRA: Un libro de actas digital que nadie puede borrar</h2>
+      <p class="lead stagger-2">Sin criptomonedas ni costos por transacción. Diseñado bajo Security by Design, Zero Trust, Inmutabilidad y Mínimo Privilegio.</p>
+      
+      <div class="pillars stagger-3">
+        <div class="pillar" data-name="BLOCKCHAIN" role="button" tabindex="0"><div class="icon">⛓</div><div class="t">Blockchain</div><div class="h">Hyperledger Fabric</div></div>
+        <div class="pillar" data-name="CIBERSEGURIDAD" role="button" tabindex="0"><div class="icon">🛡</div><div class="t">Ciberseguridad</div><div class="h">Metodología STRIDE</div></div>
+        <div class="pillar" data-name="IOT" role="button" tabindex="0"><div class="icon">📡</div><div class="t">IoT Forense</div><div class="h">MQTT/TLS + Edge Signing</div></div>
+      </div>
+      <div class="link-out stagger-4"><div class="fill" id="linkFill"></div></div>
+      <div class="seal stagger-4" id="pillarOut">Haz clic en cada pilar para explorar la integración...</div>
+    </div>
+  </section>
+
+  <!-- SECCIÓN 5 — CONOCIMIENTO DEL MERCADO -->
+  <section class="slide">
+    <div class="content">
+      <div class="kicker stagger-1">Oportunidad y vacuidad regional</div>
+      <h2 class="stagger-1">Argentina como piloto, América Latina como horizonte</h2>
+      <p class="lead stagger-2">Sistemas equivalentes en la región (SNT Brasil, CENATRA México, Marco Nacional de Colombia) gestionan procesos críticos, pero ninguno ha implementado inmutabilidad criptográfica.</p>
+
+      <div class="cases stagger-3" style="margin-bottom:1.6rem;">
+        <div class="case-chip"><b>Brasil</b> — SNT (Sistema Nacional de Trasplantes)</div>
+        <div class="case-chip"><b>México</b> — CENATRA</div>
+        <div class="case-chip"><b>Colombia</b> — Marco Nacional de Trasplantes</div>
+      </div>
+
+      <div class="card stagger-4" style="border-left: 4px solid var(--alto);">
+        <div class="t" style="display:flex; align-items:center; justify-content:space-between;">
+          <span>Análisis de Competidores Directos</span>
+          <span class="badge alto" style="animation: blinkDot 1.2s infinite alternate;">PENDIENTE DE REVISIÓN</span>
+        </div>
+        <div class="d" style="margin-top:0.6rem; font-size:14px; color:var(--text);">
+          <i>"La ausencia total de soluciones nacionales con blockchain en producción en América Latina (dato validado en el análisis de amenazas) es, en sí mismo, el hallazgo central del mercado."</i>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECCIÓN 6 — PROPUESTA DE VALOR / DIFERENCIADOR -->
+  <section class="slide">
+    <div class="content">
+      <div class="kicker stagger-1">Diferenciador competitivo</div>
+      <h2 class="stagger-1">Metodología STRIDE + MITRE ATT&CK Enterprise v14</h2>
+      <p class="lead stagger-2">INTEGRA no es una tecnología de moda ni un prototipo desconectado: es la única arquitectura diseñada desde el análisis riguroso de amenazas.</p>
+
+      <div class="compare stagger-3">
+        <div class="h">Criterio</div><div class="h col-fabric">Hyperledger Fabric</div><div class="h">Ethereum Privado</div><div class="h">Quorum / Corda</div>
+        <div class="lbl">Identidad</div><div class="good col-fabric">PKI nativa + MSP</div><div class="bad">Solo claves privadas</div><div>PKI / X.509</div>
+        <div class="lbl">Confidencialidad</div><div class="good col-fabric">Canales privados aislados</div><div class="bad">Transacciones visibles</div><div>Parcial</div>
+        <div class="lbl">Rendimiento</div><div class="good col-fabric">3,000–10,000 TPS</div><div class="bad">100–300 TPS</div><div>500–1,500 TPS</div>
+        <div class="lbl">Madurez en Salud</div><div class="good col-fabric">Alta — FDA, NHS, MedRec</div><div class="bad">Baja</div><div>Media (Sector financiero)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECCIÓN 7 — PROGRESO DEL PRODUCTO (ROADMAP) -->
+  <section class="slide">
+    <div class="content">
+      <div class="kicker stagger-1">Plan de implementación en 4 Fases</div>
+      <h2 class="stagger-1">De la especificación técnica a la réplica regional</h2>
+      <p class="lead stagger-2">Estrategia progresiva orientada a la validación en entorno real y capacitación institucional.</p>
+
+      <div class="roadmap stagger-3">
+        <div class="roadmap-line-bg"></div>
+        <div class="roadmap-line-fill"></div>
+        
+        <div class="rstep completed">
+          <div class="f">FASE 1 · COMPLETADA</div>
+          <h3>Fundamentos</h3>
+          <p>Especificación técnica, prototipo Fabric, modelo STRIDE y viabilidad regulatoria.</p>
+        </div>
+        <div class="rstep in-progress">
+          <div class="f">FASE 2 · EN CURSO</div>
+          <h3>Piloto</h3>
+          <p>Operación en paralelo con datos anonimizados, <b>capacitación institucional</b> y lecciones aprendidas.</p>
+        </div>
+        <div class="rstep future">
+          <div class="f">FASE 3</div>
+          <h3>Expansión</h3>
+          <p>Integración completa de IoT y <b>documentación del modelo de gobernanza</b> multisectorial.</p>
+        </div>
+        <div class="rstep future">
+          <div class="f">FASE 4</div>
+          <h3>Réplica Regional</h3>
+          <p>Kit de replicación, adaptación normativa y <b>soporte a nuevas implementaciones en LatAm</b>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECCIÓN 8 — FRAMEWORK DE CIBERSEGURIDAD (SUB-TABS INTERNOS) -->
+  <section class="slide">
+    <div class="content">
+      <div class="kicker stagger-1">Seguridad por Diseño</div>
+      <h2 class="stagger-1">Framework de Ciberseguridad & Trazabilidad</h2>
+      
+      <!-- SUB-TABS INTERNOS PARA NAVEGAR 8a A 8f -->
+      <div class="framework-nav stagger-2">
+        <button class="fw-tab active" onclick="switchFwTab('stride')">8a. STRIDE</button>
+        <button class="fw-tab" onclick="switchFwTab('actores')">8b. Actores</button>
+        <button class="fw-tab" onclick="switchFwTab('matriz')">8c. Heatmap Riesgo</button>
+        <button class="fw-tab" onclick="switchFwTab('mitre')">8d. MITRE ATT&CK</button>
+        <button class="fw-tab" onclick="switchFwTab('identidad')">8e. RBAC & PKI</button>
+        <button class="fw-tab" onclick="switchFwTab('trazabilidad')">8f. Trazabilidad Controls</button>
+      </div>
+
+      <!-- 8a: STRIDE -->
+      <div class="fw-content active" id="fw-stride">
+        <table class="data">
+          <tr><th>Categoría</th><th>Amenaza específica</th><th>Nivel</th></tr>
+          <tr><td>Suplantación</td><td class="muted">Médico falso con credenciales robadas. Falsificación de identidad del donante.</td><td><span class="badge critico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> CRÍTICO</span></td></tr>
+          <tr><td>Manipulación</td><td class="muted">Alteración de la lista de espera. Cambio de compatibilidad HLA.</td><td><span class="badge critico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> CRÍTICO</span></td></tr>
+          <tr><td>Repudio</td><td class="muted">Actor interno niega una modificación. Sin logs firmados ni inmutables.</td><td><span class="badge alto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg> ALTO</span></td></tr>
+          <tr><td>Exposición de datos</td><td class="muted">Fuga de datos de pacientes en espera. Rutas de traslado expuestas.</td><td><span class="badge alto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg> ALTO</span></td></tr>
+          <tr><td>Denegación de servicio</td><td class="muted">Ransomware durante coordinación activa. DDoS al registro nacional.</td><td><span class="badge critico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> CRÍTICO</span></td></tr>
+          <tr><td>Escalada de privilegio</td><td class="muted">IT tercerizado con acceso irrestricto. Movimiento lateral a red clínica.</td><td><span class="badge alto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg> ALTO</span></td></tr>
+        </table>
+      </div>
+
+      <!-- 8b: ACTORES DE AMENAZA -->
+      <div class="fw-content" id="fw-actores">
+        <div class="cards focus-group">
+          <div class="card"><div class="t">Insider corrupto</div><div class="m">Probabilidad Alta · Impacto Crítico</div><div class="d">Modificación de la lista de espera y borrado de registros de auditoría.</div></div>
+          <div class="card"><div class="t">Grupo de Ransomware</div><div class="m">Probabilidad Muy Alta · Impacto Crítico</div><div class="d">Cifrado de sistemas críticos durante la ventana de isquemia del órgano.</div></div>
+          <div class="card"><div class="t">Red de Tráfico de Órganos</div><div class="m">Probabilidad Media · Impacto Crítico</div><div class="d">Corrupción de insumos y falsificación de estudios HLA para desviar órganos.</div></div>
+          <div class="card"><div class="t">Proveedor IT Comprometido</div><div class="m">Probabilidad Alta · Impacto Alto</div><div class="d">Abuso de accesos remotos tercerizados sin autenticación multifactor.</div></div>
+        </div>
+      </div>
+
+      <!-- 8c: HEATMAP 4x4 -->
+      <div class="fw-content" id="fw-matriz">
+        <div class="heatmap-grid">
+          <div class="hm-cell header">Impacto \ Prob.</div>
+          <div class="hm-cell header">Baja</div>
+          <div class="hm-cell header">Media</div>
+          <div class="hm-cell header">Alta</div>
+          <div class="hm-cell header">Muy Alta</div>
+
+          <div class="hm-cell header">Catastrófico</div>
+          <div class="hm-cell med">APT Estatal</div>
+          <div class="hm-cell high">Red Tráfico</div>
+          <div class="hm-cell high">Insider Corrupto</div>
+          <div class="hm-cell high">Ransomware (Conti)</div>
+
+          <div class="hm-cell header">Alto</div>
+          <div class="hm-cell low">Script Kiddie</div>
+          <div class="hm-cell med">DDoS Registro</div>
+          <div class="hm-cell high">IT Tercerizado</div>
+          <div class="hm-cell high">Phishing Clínico</div>
+
+          <div class="hm-cell header">Medio</div>
+          <div class="hm-cell low">Falla de Red</div>
+          <div class="hm-cell low">Error Manual</div>
+          <div class="hm-cell med">Falla Sensor IoT</div>
+          <div class="hm-cell med">Robo Credencial</div>
+        </div>
+      </div>
+
+      <!-- 8d: MITRE ATT&CK -->
+      <div class="fw-content" id="fw-mitre">
+        <table class="data">
+          <tr><th>Táctica</th><th>Técnica MITRE ATT&CK</th><th>Mitigación INTEGRA</th></tr>
+          <tr><td>Initial Access</td><td class="muted">T1566 — Phishing / T1190 — Exploit Public App</td><td class="muted">PKI X.509 + MFA obligatorio + PAM</td></tr>
+          <tr><td>Privilege Escalation</td><td class="muted">T1068 — Exploitation for Privilege Escalation</td><td class="muted">RBAC estricto + Chaincode Isolation</td></tr>
+          <tr><td>Lateral Movement</td><td class="muted">T1021 — Remote Services</td><td class="muted">Microsegmentación + Canales aislados Fabric</td></tr>
+          <tr><td>Impact</td><td class="muted">T1486 — Data Encrypted for Impact (Ransomware)</td><td class="muted">Ledger inmutable distribuido multisitio</td></tr>
+        </table>
+      </div>
+
+      <!-- 8e: RBAC & PKI -->
+      <div class="fw-content" id="fw-identidad">
+        <table class="data">
+          <tr><th>Actor</th><th>Identidad Criptográfica</th><th>Permisos (RBAC)</th></tr>
+          <tr><td>Coordinador INCUCAI</td><td class="muted">Certificado X.509 OrgMSP + TOTP</td><td class="muted">Escritura firmada en lista de espera nacional</td></tr>
+          <tr><td>Médico Trasplantador</td><td class="muted">Certificado Personal + Biometría</td><td class="muted">Lectura de compatibilidad HLA, firma de recepción</td></tr>
+          <tr><td>Dispositivo IoT</td><td class="muted">Certificado Device CA (TTL 72h)</td><td class="muted">Escritura exclusiva de telemetría firmada en el edge</td></tr>
+          <tr><td>Auditor Externo</td><td class="muted">Certificado Read-Only Temporal</td><td class="muted">Lectura total del registro de transacciones</td></tr>
+        </table>
+      </div>
+
+      <!-- 8f: TRAZABILIDAD AMENAZA -> CONTROL -->
+      <div class="fw-content" id="fw-trazabilidad">
+        <table class="data">
+          <tr><th>Amenaza Identificada</th><th>CVSS Score</th><th>Control Técnico Específico INTEGRA</th></tr>
+          <tr><td>Ransomware en coordinación activa</td><td class="muted"><span class="badge critico">▲ 9.8</span></td><td class="muted">Fabric distribuido multisitio + IRP + Backup Offline</td></tr>
+          <tr><td>Insider manipula lista de espera</td><td class="muted"><span class="badge critico">▲ 9.8</span></td><td class="muted">Chaincode WaitingListManager + Endorsement múltiple</td></tr>
+          <tr><td>Falsificación de datos HLA</td><td class="muted"><span class="badge critico">▲ 9.5</span></td><td class="muted">CompatibilityEngine inmutable + canal clínico privado</td></tr>
+          <tr><td>Ausencia de MFA en accesos</td><td class="muted"><span class="badge critico">▲ 9.5</span></td><td class="muted">PKI X.509 + MSP de Fabric + Auth Biométrica</td></tr>
+          <tr><td>IoT sin autenticación edge</td><td class="muted"><span class="badge alto">⚠ 8.1</span></td><td class="muted">Device CA + MQTT/TLS + Firma digital en microcontrolador</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECCIÓN 9 — FACTIBILIDAD TÉCNICA Y FINANCIERA -->
+  <section class="slide">
+    <div class="content">
+      <div class="kicker stagger-1">Viabilidad y Límites</div>
+      <h2 class="stagger-1">Factibilidad Técnica y Estimación Financiera</h2>
+      
+      <div class="split stagger-2">
+        <div class="split-card a">
+          <div class="k">ESPECIFICACIÓN TÉCNICA (SÓLIDA)</div>
+          <ul>
+            <li><b>Plataforma:</b> Hyperledger Fabric v2.5+, TLS 1.3, ECDSA P-256</li>
+            <li><b>Rendimiento:</b> 3,000 – 10,000 TPS probados</li>
+            <li><b>Arquitectura:</b> Canales aislados (main, clinical, audit)</li>
+            <li><b>Limitaciones reconocidas (8.4):</b> No resuelve por sí sola corrupción institucional ni falta de conectividad rural sin voluntad.</li>
+          </ul>
+        </div>
+
+        <div class="split-card b">
+          <div class="k" style="display:flex; justify-content:space-between; align-items:center;">
+            <span>ESTIMACIÓN FINANCIERA</span>
+            <span class="badge alto">PENDIENTE</span>
+          </div>
+          <ul>
+            <li><b>Infraestructura Piloto:</b> Nodos Fabric en nube pública/híbrida + CA.</li>
+            <li><b>Hardware IoT:</b> Sensores de temperatura/GPS (~$150 USD/unidad).</li>
+            <li><b>Costo de Oportunidad:</b> Un incidente ransomware en salud cuesta en promedio $4.88M USD (IBM Security 2024).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECCIÓN 10 — VALOR AL USUARIO Y AL DUEÑO -->
+  <section class="slide">
+    <div class="content">
+      <div class="kicker stagger-1">Impacto Multilateral</div>
+      <h2 class="stagger-1">Dos beneficiarios, dos propuestas de valor</h2>
+      
+      <div class="split stagger-2">
+        <div class="split-card a">
+          <div class="k">PACIENTE Y EQUIPO MÉDICO</div>
+          <ul>
+            <li>Verifica la trazabilidad e inmutabilidad de su propio caso</li>
+            <li>Eliminación de errores por procesos manuales o de papel</li>
+            <li>Garantía de continuidad operativa ante ciberataques</li>
+          </ul>
+        </div>
+
+        <div class="split-card b">
+          <div class="k">INSTITUCIÓN Y OPERADOR NACIONAL</div>
+          <ul>
+            <li>Reducción drástica de riesgo regulatorio y reputacional</li>
+            <li>Mitigación de costos por incidentes de ransomware</li>
+            <li>Registros 100% auditables para acreditación internacional</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECCIÓN 11 — EQUIPO Y CIERRE -->
+  <section class="slide">
+    <div class="content">
+      <div class="closing-layout">
+
+        <div class="closing-kicker stagger-1">Equipo Interdisciplinario</div>
+
+        <div class="closing-quote stagger-2">
+          Un registro que un solo actor no puede alterar, para decisiones que un país no puede permitirse equivocar.
+        </div>
+
+        <div class="closing-divider stagger-2"></div>
+
+        <div class="roster-row stagger-3">
+          <div class="rcard">
+            <span class="flag">AR</span>
+            <div class="n">María José Rabellino</div>
+            <div class="r">Ing. en Sistemas (FRSF-UTN)<br>Master Blockchain (Codecrypto)</div>
+          </div>
+          <div class="rcard">
+            <span class="flag">MX</span>
+            <div class="n">Silvia Hernández Márquez</div>
+            <div class="r">Ingeniera Informática</div>
+          </div>
+          <div class="rcard">
+            <span class="flag">EC</span>
+            <div class="n">Angely Samira Segovia Chávez</div>
+            <div class="r">Estudiante avanzada de Ingeniería</div>
+          </div>
+        </div>
+
+        <div class="closing-tagline stagger-4">
+          INTEGRA — Argentina como primer caso, América Latina como horizonte
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- BARRA DE NAVEGACIÓN INFERIOR (BOTONES GRANDES) -->
+<div class="bottom-nav-bar">
+  <button id="prevBtn" class="bottom-nav-btn" aria-label="Sección anterior">
+    <span>‹</span> Anterior
+  </button>
+  <span class="slide-count-badge" id="slideCountBadge">1 / 11</span>
+  <button id="nextBtn" class="bottom-nav-btn" aria-label="Siguiente sección">
+    Siguiente <span>›</span>
+  </button>
+</div>
+
+<script>
+  // SHORT TITLES FOR THE 11 SECTIONS IN ECG MONITOR
+  const sectionTitles = [
+    "01. Portada",
+    "02. El Problema",
+    "03. 3 Desafíos",
+    "04. La Propuesta",
+    "05. Mercado",
+    "06. Propuesta de Valor",
+    "07. Roadmap",
+    "08. Ciberseguridad",
+    "09. Factibilidad",
+    "10. Valor & Impacto",
+    "11. Equipo & Cierre"
+  ];
+
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let idx = 0;
+
+  const ecgHeader = document.getElementById('ecgHeader');
+  const ecgTrack = document.getElementById('ecgTrack');
+  const ecgProgress = document.getElementById('ecgProgress');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const slideCountBadge = document.getElementById('slideCountBadge');
+
+  // BUILD ECG TRACK NODES FOR THE 11 SECTIONS
+  function buildEcgTrack() {
+    sectionTitles.forEach((title, i) => {
+      const node = document.createElement('button');
+      node.className = 'ecg-node' + (i === 0 ? ' active' : '');
+      node.setAttribute('aria-label', `Ir a sección ${title}`);
+      
+      // ECG Heartbeat Peak SVG
+      node.innerHTML = `
+        <svg class="ecg-node-svg" viewBox="0 0 44 22">
+          <path d="M 0,14 L 14,14 L 18,2 L 22,20 L 26,8 L 30,14 L 44,14" />
+        </svg>
+        <div class="ecg-dot-wrapper">
+          <div class="ecg-halo"></div>
+          <div class="ecg-dot"></div>
+        </div>
+        <span class="ecg-label">${title}</span>
+      `;
+      
+      node.addEventListener('click', (e) => {
+        e.stopPropagation();
+        goToSlide(i);
+      });
+      ecgTrack.appendChild(node);
+    });
+  }
+
+  let prevIdx = 0; // track previous index for directional transitions
+
+  function goToSlide(targetIdx) {
+    if (targetIdx < 0 || targetIdx >= total || targetIdx === idx) return;
+    prevIdx = idx;
+    idx = targetIdx;
+    render(targetIdx > prevIdx ? 'fwd' : 'back');
+  }
+
+  function render(direction) {
+    /* SHARED-AXIS TRANSITION:
+       direction='fwd'  → old slide exits LEFT,  new slide enters from RIGHT
+       direction='back' → old slide exits RIGHT, new slide enters from LEFT
+       No direction (initial load) → just show active with no exit animation */
+    slides.forEach((s, i) => {
+      s.classList.remove('active', 'exit-left', 'exit-right');
+      if (i === idx) {
+        s.classList.add('active');
+      } else if (i < idx) {
+        s.classList.add('exit-left');
+      } else {
+        s.classList.add('exit-right');
+      }
+    });
+
+    // Update ECG Nodes state
+    const nodes = ecgTrack.querySelectorAll('.ecg-node');
+    nodes.forEach((node, i) => {
+      node.classList.remove('active', 'visited');
+      if (i === idx) {
+        node.classList.add('active');
+      } else if (i < idx) {
+        node.classList.add('visited');
+      }
+    });
+
+    // Update ECG Traversed Line
+    const progressPercent = (idx / (total - 1)) * 100;
+    ecgProgress.style.width = `calc(${progressPercent}% * 0.94)`;
+
+    // Update Counter and Nav Buttons
+    slideCountBadge.textContent = `${idx + 1} / ${total}`;
+    prevBtn.disabled = (idx === 0);
+    nextBtn.disabled = (idx === total - 1);
+
+    if (idx === 1) animateCounts(slides[1]);
+  }
+
+  function animateCounts(slide) {
+    slide.querySelectorAll('[data-count]').forEach(el => {
+      if (el.dataset.done) return;
+      el.dataset.done = '1';
+      const target = parseInt(el.dataset.count, 10);
+      const prefix = el.dataset.prefix || '';
+      const suffix = el.dataset.suffix || '';
+      let n = 0;
+      const step = Math.max(1, Math.round(target / 30));
+      const iv = setInterval(() => {
+        n += step;
+        if (n >= target) { n = target; clearInterval(iv); }
+        el.textContent = prefix + n + suffix;
+      }, 25);
+    });
+  }
+
+  // FRAMEWORK SUB-TABS (SECTION 8)
+  function switchFwTab(tabId) {
+    document.querySelectorAll('.fw-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.fw-content').forEach(c => c.classList.remove('active'));
+    
+    event.target.classList.add('active');
+    const targetContent = document.getElementById(`fw-${tabId}`);
+    if (targetContent) targetContent.classList.add('active');
+  }
+
+  // EVENT LISTENERS FOR BUTTONS AND KEYBOARD ARROWS
+  prevBtn.addEventListener('click', () => { if (idx > 0) goToSlide(idx - 1); });
+  nextBtn.addEventListener('click', () => { if (idx < total - 1) goToSlide(idx + 1); });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') { if (idx < total - 1) goToSlide(idx + 1); }
+    if (e.key === 'ArrowLeft') { if (idx > 0) goToSlide(idx - 1); }
+  });
+
+  // INITIALIZE
+  buildEcgTrack();
+  render();
+
+  // THREE PILLARS INTERACTIVE FEATURE
+  const pillars = document.querySelectorAll('.pillar');
+  const lit = new Set();
+  const pillarOut = document.getElementById('pillarOut');
+  const linkFill = document.getElementById('linkFill');
+  function pillarClick(p){
+    if(p.classList.contains('lit')) return;
+    p.classList.add('lit');
+    lit.add(p.dataset.name);
+    linkFill.style.width = ((lit.size/pillars.length)*100) + '%';
+    if(lit.size === pillars.length){
+      pillarOut.textContent = 'Blockchain + Ciberseguridad + IoT — integrados en una sola infraestructura';
+    }
+  }
+  pillars.forEach(p=>{
+    p.addEventListener('click', ()=>pillarClick(p));
+    p.addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); pillarClick(p); } });
+  });
+</script>
+
+</body>
+</html>
