@@ -140,4 +140,122 @@
   buildEcgTrack();
   render();
 
+  // ===== SECTION 5: MARKET MAP =====
+  const initMarketSection = () => {
+    // 1. Classify countries by name or class
+    const litNames = ["India", "Saudi Arabia", "Republic of Korea", "Turkey", "United States"];
+    const latamNames = ["Argentina", "Brazil", "Bolivia", "Chile", "Colombia", "Ecuador", "Guyana", "Paraguay", "Peru", "Suriname", "Uruguay", "Venezuela", "Mexico", "Guatemala", "Honduras", "El Salvador", "Nicaragua", "Costa Rica", "Panama", "Cuba", "Dominican Republic", "Haiti", "Jamaica", "Belize", "French Guiana"];
+
+    const paths = document.querySelectorAll('#worldMapSvg path');
+    paths.forEach(p => {
+      const name = p.getAttribute('name') || p.getAttribute('class');
+      if (!name) return;
+      
+      const isLit = litNames.some(n => name.includes(n));
+      const isLatam = latamNames.some(n => name.includes(n));
+
+      if (isLit) p.classList.add('land-lit');
+      else if (isLatam) p.classList.add('land-dim');
+    });
+
+    // 2. Tooltips
+    const markers = document.querySelectorAll('.marker-group');
+    if (!markers.length) return;
+
+    let tooltip = document.querySelector('.map-tooltip');
+    if (!tooltip) {
+      tooltip = document.createElement('div');
+      tooltip.className = 'map-tooltip';
+      tooltip.innerHTML = '<h4 class="tt-title"></h4><div class="tt-platform"></div><div class="tt-limit"></div>';
+      document.body.appendChild(tooltip);
+    }
+    const ttTitle = tooltip.querySelector('.tt-title');
+    const ttPlatform = tooltip.querySelector('.tt-platform');
+    const ttLimit = tooltip.querySelector('.tt-limit');
+
+    const showTooltip = (e, target) => {
+      const isLatam = target.dataset.country === 'latam';
+      
+      if (isLatam) {
+        ttTitle.textContent = "Viabilidad Regulatoria (América Latina)";
+        ttPlatform.style.display = 'none';
+        ttLimit.innerHTML = `
+          <div style="font-size: 11.5px; color: var(--text); margin-bottom: 0.8rem; line-height: 1.4;">Ningún país de la región tiene aún un proyecto blockchain documentado. Viabilidad regulatoria estimada para una futura expansión:</div>
+          <ul class="latam-matrix-list">
+            <li><span>Argentina</span> <span class="badge verde">ALTA</span></li>
+            <li><span>Brasil</span> <span class="badge verde">ALTA</span></li>
+            <li><span>México</span> <span class="badge amarillo">MEDIA</span></li>
+            <li><span>Colombia</span> <span class="badge amarillo">MEDIA</span></li>
+            <li><span>Chile</span> <span class="badge naranja">BAJA-MEDIA</span></li>
+          </ul>
+        `;
+        tooltip.classList.add('tooltip-latam');
+      } else if (target.dataset.dual === 'true') {
+        // India: two projects
+        ttTitle.textContent = target.dataset.title;
+        ttPlatform.style.display = 'none';
+        ttLimit.innerHTML = `
+          <div class="tt-dual-project">
+            <div class="tt-dual-name">Indriya (2023)</div>
+            <div class="tt-dual-platform">Hyperledger Fabric / AWS · 389 TPS validados</div>
+            <div class="tt-dual-limit">Prototipo académico completo. Sin integración IoT real ni plan de despliegue institucional.</div>
+          </div>
+          <div class="tt-dual-divider"></div>
+          <div class="tt-dual-project">
+            <div class="tt-dual-name">Organ Harbour (2024)</div>
+            <div class="tt-dual-platform">Ethereum</div>
+            <div class="tt-dual-limit">dApp de registro e integración hospitalaria. Sin ciberseguridad embebida, sin threat modeling.</div>
+          </div>
+        `;
+        tooltip.classList.remove('tooltip-latam');
+        tooltip.classList.add('tooltip-dual');
+      } else {
+        ttTitle.textContent = target.dataset.title;
+        ttPlatform.textContent = target.dataset.platform;
+        ttLimit.textContent = target.dataset.limit;
+        ttPlatform.style.display = 'block';
+        tooltip.classList.remove('tooltip-latam');
+        tooltip.classList.remove('tooltip-dual');
+      }
+      
+      tooltip.classList.add('visible');
+      
+      const rect = target.getBoundingClientRect();
+      const ttRect = tooltip.getBoundingClientRect();
+      let left = rect.left + rect.width / 2;
+      let top = rect.top - ttRect.height - 15;
+      
+      if (left + ttRect.width / 2 > window.innerWidth - 20) {
+        left = window.innerWidth - ttRect.width - 20;
+      } else if (left - ttRect.width / 2 < 20) {
+        left = 20;
+      } else {
+        left = left - ttRect.width / 2;
+      }
+      
+      if (top < 20) top = rect.bottom + 15;
+      
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `${top}px`;
+    };
+
+    const hideTooltip = () => tooltip.classList.remove('visible');
+
+    markers.forEach(m => {
+      m.addEventListener('mouseenter', (e) => showTooltip(e, m));
+      m.addEventListener('mouseleave', hideTooltip);
+      m.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        showTooltip(e, m);
+      }, {passive: false});
+    });
+    
+    document.addEventListener('touchstart', (e) => {
+      if (!e.target.closest('.marker-group')) {
+        hideTooltip();
+      }
+    });
+  };
+  initMarketSection();
+
 
